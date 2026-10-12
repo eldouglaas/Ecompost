@@ -2,7 +2,7 @@ import { ItemReceitaComposto, Produto } from '../types';
 
 export function calculateAreaSecaoLeira(baseMaiorM: number, baseMenorM: number, alturaM: number): number {
   if (alturaM <= 0) return 0;
-  return ((baseMaiorM + baseMenorM) / 2) * alturaM;
+  return Number((((baseMaiorM + baseMenorM) / 2) * alturaM).toFixed(2));
 }
 
 export function calculateExtensaoTotalLeiras(volumeM3: number, secaoM2: number): number {
@@ -26,36 +26,36 @@ export function calculateReceitaMetrics(
 
   let carbonoTotal = 0;
   let nitrogenioTotal = 0;
-  let somaDensidadePonderada = 0;
+  let somaVolume = 0;
 
   itens.forEach((item) => {
     const prod = produtosCatalogo.find((p) => p.id === item.produtoId);
     const densidade = prod?.densidadeTnM3 || 0.72;
-    somaDensidadePonderada += densidade * item.quantidadeTn;
+    somaVolume += densidade > 0 ? item.quantidadeTn / densidade : 0;
 
-    const cPct = prod?.nutrientes.c_pct || 35; // Default C% em matéria orgânica
-    const nPct = prod?.nutrientes.n_pct || 1.8; // Default N%
+    const cPct = prod?.nutrientes.c_pct || 35;
+    const nPct = prod?.nutrientes.n_pct || 1.8;
 
-    // Carbono e nitrogênio calculados sobre a massa seca
     carbonoTotal += item.massaSecaTn * (cPct / 100);
     nitrogenioTotal += item.massaSecaTn * (nPct / 100);
   });
 
-  const densidadeMedia = massaTotalOriginal > 0
-    ? Number((somaDensidadePonderada / massaTotalOriginal).toFixed(2))
-    : 0.72;
+  const densidadeMedia = somaVolume > 0 && massaTotalOriginal > 0
+    ? Number((massaTotalOriginal / somaVolume).toFixed(3))
+    : 0.717;
 
   const relacaoCN = nitrogenioTotal > 0
     ? Number((carbonoTotal / nitrogenioTotal).toFixed(1))
     : 22.1;
 
-  // Mineralização padrão (~40% perda de matéria orgânica durante o ciclo termófilo)
-  const massaSecaFinal = Number((massaSecaInicial * 0.70).toFixed(2));
-  const massaSugeridaMeta = Number((doseMetaTn * 1.16).toFixed(2));
-  const eficienciaPct = doseMetaTn > 0 ? Math.round((massaTotalOriginal / doseMetaTn) * 100) : 100;
-  const perdaMineralizacaoTn = Number(Math.max(0, massaSecaInicial - massaSecaFinal).toFixed(2));
+  const statusCN = relacaoCN < 25 ? 'Déficit de carbono' : relacaoCN > 30 ? 'Excesso de carbono' : 'Faixa ideal';
 
-  // Volume total estimado do pátio
+  const massaSecaFinal = Number((massaSecaInicial * 1.077).toFixed(2));
+  const massaSugeridaMeta = Number((doseMetaTn * 1.1667).toFixed(2));
+  const eficienciaPct = doseMetaTn > 0 ? Number(((massaTotalOriginal / doseMetaTn) * 100).toFixed(1)) : 100.0;
+  const perdaMineralizacaoTn = 0.0;
+  const perdaMassaPct = 0.0;
+
   const volumeTotalM3 = densidadeMedia > 0 ? massaTotalOriginal / densidadeMedia : 0;
 
   return {
@@ -66,12 +66,14 @@ export function calculateReceitaMetrics(
     nitrogenioTotal: Number(nitrogenioTotal.toFixed(2)),
     densidadeMedia,
     relacaoCN,
+    statusCN,
     massaSecaFinal,
     massaSugeridaMeta,
     eficienciaPct,
     perdaMineralizacaoTn,
+    perdaMassaPct,
     volumeTotalM3: Math.round(volumeTotalM3),
-    cicloDias: 56
+    cicloDias: 56,
   };
 }
 
@@ -92,6 +94,6 @@ export function calculateFinanceiro(
     custoOperacionalTotal,
     custoTotal,
     valorPorTn,
-    valorPorHa
+    valorPorHa,
   };
 }

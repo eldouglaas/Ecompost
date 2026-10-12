@@ -55,29 +55,19 @@ export interface ItemReceitaComposto {
   percentual: number;
   valorUnitario: number;
   subtotal: number;
+  kgPorMetro?: number;
 }
 
-export interface LeituraMonitoramento {
+export interface MedicaoLeiraPonto {
   id: string;
   data: string;
-  diaCiclo: number;
-  temperaturaC: number;
+  leiraNumero: number;
+  ponto1: number;
+  ponto2: number;
+  ponto3: number;
+  media: number;
   umidadePct: number;
-  reviramento: boolean;
-  observacao?: string;
-}
-
-export interface LeiraData {
-  numero: number;
-  comprimentoM: number;
-  alturaM: number;
-  baseMaiorM: number;
-  baseMenorM: number;
-  volumeM3: number;
-  massaEstimadaTn: number;
-  dataInicio: string;
-  fase: 'Mesófilo' | 'Termófilo' | 'Maturação';
-  leituras: LeituraMonitoramento[];
+  aguaRevolvimento: string;
 }
 
 export interface Orcamento {
@@ -90,13 +80,13 @@ export interface Orcamento {
   propriedade: string;
   descricao: string;
   
-  // Passo 2: Tamanho e Dose
+  // Parâmetros Técnicos
   umidadeFinalPct: number;
   doseCompostoTnHa: number;
   areaHa: number;
   pesoFinalTn: number;
 
-  // Tamanho das Leiras
+  // Dimensionamento das Leiras
   leiraAlturaM: number;
   leiraBaseMenorM: number;
   leiraBaseMaiorM: number;
@@ -105,9 +95,10 @@ export interface Orcamento {
   extensaoTotalM: number;
   nrLeiras: number;
 
-  // Passo 3: Receita e Engenharia
+  // Receita e Engenharia do Composto
   itens: ItemReceitaComposto[];
   relacaoCN: number;
+  statusCN?: string;
   carbonoTotalTn: number;
   nitrogenioTotalTn: number;
   densidadeMedia: number;
@@ -116,9 +107,10 @@ export interface Orcamento {
   massaSugeridaMetaTn: number;
   eficienciaPct: number;
   perdaMineralizacaoTn: number;
+  perdaMassaPct?: number;
   cicloDias: number;
 
-  // Passo 4: Custos
+  // Resumo Financeiro
   custoOperacionalPorTn: number;
   assessoriaTotal: number;
   locacaoEquipamentos: number;
@@ -128,6 +120,6 @@ export interface Orcamento {
   valorPorHa: number;
   situacao: SituacaoOrcamento;
 
-  // Leiras geradas para monitoramento
-  leiras?: LeiraData[];
+  // Medições registradas das Leiras
+  medicoesLeiras?: MedicaoLeiraPonto[];
 }

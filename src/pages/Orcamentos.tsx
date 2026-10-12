@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, Pencil, Plus, Printer, Search, Thermometer, Trash2 } from 'lucide-react';
+import { FileText, Pencil, Plus, Printer, Ruler, Search, Thermometer, Trash2 } from 'lucide-react';
 import { PageHeader, Pill } from '../components/ui';
 import { brl, num, useStore } from '../store/store';
 
@@ -63,10 +63,11 @@ export default function Orcamentos() {
                   </select>
                 </td>
                 <td className="whitespace-nowrap text-right">
-                  <Link title="Editar" to={`/orcamentos/${o.id}/editar`} className="mr-3 inline-block"><Pencil className="h-4 w-4" /></Link>
-                  <Link title="Relatório" to={`/orcamentos/${o.id}/relatorio`} className="mr-3 inline-block"><Printer className="h-4 w-4" /></Link>
-                  <Link title="Monitoramento de Leira" to={`/orcamentos/${o.id}/monitoramento`} className="mr-3 inline-block"><Thermometer className="h-4 w-4" /></Link>
-                  <button title="Excluir" onClick={() => confirm('Excluir orçamento?') && deleteOrcamento(o.id)}><Trash2 className="h-4 w-4" /></button>
+                  <Link title="Editar" to={`/orcamentos/${o.id}/editar`} className="mr-3 inline-block hover:text-emerald-600"><Pencil className="h-4 w-4" /></Link>
+                  <Link title="Projeto de Compostagem Final" to={`/orcamentos/${o.id}/relatorio?tab=resumido`} className="mr-3 inline-block hover:text-emerald-600"><Printer className="h-4 w-4" /></Link>
+                  <Link title="Planejamento para Montagem da Leira" to={`/orcamentos/${o.id}/relatorio?tab=montagem`} className="mr-3 inline-block hover:text-blue-600"><Ruler className="h-4 w-4" /></Link>
+                  <Link title="Monitoramento das Leiras" to={`/orcamentos/${o.id}/relatorio?tab=monitoramento`} className="mr-3 inline-block hover:text-emerald-600"><Thermometer className="h-4 w-4" /></Link>
+                  <button title="Excluir" className="hover:text-red-600" onClick={() => confirm('Excluir orçamento?') && deleteOrcamento(o.id)}><Trash2 className="h-4 w-4" /></button>
                 </td>
               </tr>
             ))}
