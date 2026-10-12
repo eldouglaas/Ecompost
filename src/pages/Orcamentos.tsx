@@ -7,7 +7,7 @@ import { brl, num, useStore } from '../store/store';
 const badge = { Aberto: 'badge-open', Aprovado: 'badge-active', Cancelado: 'badge-canceled' } as const;
 
 export default function Orcamentos() {
-  const { orcamentos, clientes, deleteOrcamento, saveOrcamento } = useStore();
+  const { orcamentos, clientes, deleteOrcamento, saveOrcamento, resetToOfficialData } = useStore();
   const nav = useNavigate();
   const [q, setQ] = useState('');
   const [sit, setSit] = useState('');
@@ -22,8 +22,29 @@ export default function Orcamentos() {
 
   return (
     <div>
-      <PageHeader icon={<FileText />} title="Orçamentos" subtitle="Projetos de compostagem"
-        action={<button className="btn-primary" onClick={() => nav('/orcamentos/novo')}><Plus className="h-4 w-4" /> Novo Orçamento</button>} />
+      <PageHeader
+        icon={<FileText />}
+        title="Orçamentos"
+        subtitle="Projetos de compostagem"
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              className="btn-secondary text-xs"
+              onClick={() => {
+                if (confirm('Restaurar os 11 orçamentos oficiais do Base44 (incluindo Lourenço Sauer #1004 com medições e produtos)?')) {
+                  resetToOfficialData();
+                  alert('Dados oficiais restaurados com sucesso!');
+                }
+              }}
+            >
+              Restaurar Dados Base44
+            </button>
+            <button className="btn-primary" onClick={() => nav('/orcamentos/novo')}>
+              <Plus className="h-4 w-4" /> Novo Orçamento
+            </button>
+          </div>
+        }
+      />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Pill label="Total" value={orcamentos.length} color="#94a3b8" />
         <Pill label="Abertos" value={c('Aberto')} color="#3b82f6" />
