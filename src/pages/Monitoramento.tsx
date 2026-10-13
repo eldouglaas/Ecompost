@@ -10,8 +10,10 @@ import {
   FileSpreadsheet,
   Flame,
   Info,
+  Layers,
   Plus,
   RefreshCw,
+  Ruler,
   Save,
   Thermometer,
   Trash2,
@@ -460,9 +462,9 @@ export default function Monitoramento() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => nav('/orcamentos')}
+            onClick={() => nav(`/orcamentos/${o.id}/editar`)}
             className="rounded-xl p-2 transition hover:bg-black/5 dark:hover:bg-white/5"
-            title="Voltar para Orçamentos"
+            title="Voltar para o Orçamento"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -479,7 +481,14 @@ export default function Monitoramento() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label className="btn-secondary flex cursor-pointer items-center gap-1.5 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => nav(`/orcamentos/${o.id}/relatorio?tab=montagem`)}
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-300"
+          >
+            <Ruler className="h-3.5 w-3.5" /> Montagem da Leira
+          </button>
+          <label className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
             <Upload className="h-3.5 w-3.5 text-emerald-600" /> Importar CSV
             <input
               type="file"
@@ -491,14 +500,21 @@ export default function Monitoramento() {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="btn-secondary flex items-center gap-1.5 text-xs font-semibold"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" /> Exportar CSV
           </button>
           <button
             type="button"
+            onClick={() => nav(`/orcamentos/${o.id}/relatorio?tab=geral`)}
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+          >
+            <Layers className="h-3.5 w-3.5" /> Relatório Geral
+          </button>
+          <button
+            type="button"
             onClick={openPdfSelector}
-            className="btn-primary flex items-center gap-1.5 text-xs font-semibold"
+            className="btn-primary flex h-9 items-center gap-1.5 px-3.5 text-xs font-semibold"
           >
             <FileDown className="h-3.5 w-3.5" /> Baixar PDF
           </button>
@@ -1408,11 +1424,11 @@ export default function Monitoramento() {
               })}
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setPdfModalOpen(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                className="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
               >
                 Cancelar
               </button>
@@ -1420,9 +1436,21 @@ export default function Monitoramento() {
                 type="button"
                 disabled={pdfSelectedLeiras.length === 0}
                 onClick={confirmPdfExport}
+                className="rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+              >
+                PDF Monitoramento ({pdfSelectedLeiras.length})
+              </button>
+              <button
+                type="button"
+                disabled={pdfSelectedLeiras.length === 0}
+                onClick={() => {
+                  setPdfModalOpen(false);
+                  const param = pdfSelectedLeiras.join(',');
+                  nav(`/orcamentos/${o.id}/relatorio?tab=geral&leiras=${param}`);
+                }}
                 className="btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-40"
               >
-                Gerar PDF ({pdfSelectedLeiras.length})
+                Relatório Geral ({pdfSelectedLeiras.length})
               </button>
             </div>
           </div>

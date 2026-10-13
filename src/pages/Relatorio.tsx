@@ -20,7 +20,7 @@ import {
 } from './Monitoramento';
 import { WindrowCrossSectionDiagram } from './OrcamentoWizard';
 
-type DocType = 'resumido' | 'completo' | 'montagem' | 'monitoramento';
+type DocType = 'resumido' | 'completo' | 'montagem' | 'monitoramento' | 'geral';
 
 const macro: [keyof ComposicaoNutricional, string][] = [
   ['n_pct', 'N (%)'],
@@ -49,11 +49,37 @@ export default function Relatorio() {
 
   const tabParam = (searchParams.get('tab') as DocType) || 'resumido';
   const [docType, setDocType] = useState<DocType>(tabParam);
+
+  // Opções da Montagem da Leira
+  const [showDiagramInMontagem, setShowDiagramInMontagem] = useState(true);
   const [showFieldGuideOnPrint, setShowFieldGuideOnPrint] = useState(false);
+
+  // Opções do Relatório Geral (quais blocos incluir)
+  const [geralIncOrcamento, setGeralIncOrcamento] = useState(true);
+  const [geralIncMontagem, setGeralIncMontagem] = useState(true);
+  const [geralIncMonitoramento, setGeralIncMonitoramento] = useState(true);
+
+  // Opções do que imprimir no Monitoramento (por padrão no Relatório Geral: apenas o gráfico)
+  const [monitShowChart, setMonitShowChart] = useState(true);
+  const [monitShowTable, setMonitShowTable] = useState(tabParam !== 'geral');
+  const [monitShowConclusao, setMonitShowConclusao] = useState(tabParam !== 'geral');
 
   const setTab = (t: DocType) => {
     setDocType(t);
-    setSearchParams({ tab: t });
+    if (t === 'geral') {
+      // No Relatório Geral, por padrão deixa apenas o gráfico marcado no monitoramento
+      setMonitShowChart(true);
+      setMonitShowTable(false);
+      setMonitShowConclusao(false);
+    } else if (t === 'monitoramento') {
+      setMonitShowChart(true);
+      setMonitShowTable(true);
+      setMonitShowConclusao(true);
+    }
+    const nextParams: Record<string, string> = { tab: t };
+    const leiras = searchParams.get('leiras');
+    if (leiras) nextParams.leiras = leiras;
+    setSearchParams(nextParams);
   };
 
   const o = orcamentos.find((x) => x.id === id);
@@ -88,14 +114,31 @@ export default function Relatorio() {
     [todasMedicoes]
   );
 
+  const [customSelectedLeiras, setCustomSelectedLeiras] = useState<number[] | null>(
+    null
+  );
+
   const leirasFiltradas = useMemo(() => {
+    if (customSelectedLeiras && customSelectedLeiras.length > 0) {
+      return customSelectedLeiras;
+    }
     if (!leirasParam) return todasLeirasNumeros;
     const parsed = leirasParam
       .split(',')
       .map((x) => Number(x.trim()))
       .filter(Boolean);
     return parsed.length > 0 ? parsed : todasLeirasNumeros;
-  }, [leirasParam, todasLeirasNumeros]);
+  }, [customSelectedLeiras, leirasParam, todasLeirasNumeros]);
+
+  const toggleLeiraFiltro = (numLeira: number) => {
+    const current = leirasFiltradas;
+    if (current.includes(numLeira)) {
+      if (current.length <= 1) return; // mantém pelo menos 1 leira
+      setCustomSelectedLeiras(current.filter((x) => x !== numLeira));
+    } else {
+      setCustomSelectedLeiras([...current, numLeira].sort((a, b) => a - b));
+    }
+  };
 
   const medicoes = useMemo(
     () =>
@@ -215,13 +258,14 @@ export default function Relatorio() {
   const conchaPadrao = userProfile?.preferencias?.capacidadeConchaM3 || 1.5;
 
   return (
-    <div className="space-y-6">
-      {/* Top Navigation & Document Selector */}
+    <div className="space-y-5">
+      {/* Top Navigation & Document Selector (Fiel ao layout da referência e bem alinhado) */}
       <div className="no-print flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => nav('/orcamentos')}
+            onClick={() => nav(`/orcamentos/${o.id}/editar`)}
             className="rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5"
+            title="Voltar para o Orçamento"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -233,13 +277,13 @@ export default function Relatorio() {
           </div>
         </div>
 
-        {/* Tab Buttons (Fiel ao eEe do Base44) */}
+        {/* Tab Buttons & Export Actions bem alinhados */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setTab('resumido')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${
               docType === 'resumido'
-                ? 'bg-emerald-600 text-white shadow'
+                ? 'bg-emerald-600 text-white shadow-sm'
                 : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
@@ -247,9 +291,9 @@ export default function Relatorio() {
           </button>
           <button
             onClick={() => setTab('completo')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${
               docType === 'completo'
-                ? 'bg-emerald-600 text-white shadow'
+                ? 'bg-emerald-600 text-white shadow-sm'
                 : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
@@ -257,9 +301,9 @@ export default function Relatorio() {
           </button>
           <button
             onClick={() => setTab('montagem')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${
               docType === 'montagem'
-                ? 'bg-blue-600 text-white shadow'
+                ? 'bg-emerald-600 text-white shadow-sm'
                 : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
@@ -267,19 +311,30 @@ export default function Relatorio() {
           </button>
           <button
             onClick={() => setTab('monitoramento')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${
               docType === 'monitoramento'
-                ? 'bg-emerald-600 text-white shadow'
+                ? 'bg-emerald-600 text-white shadow-sm'
                 : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
             <Thermometer className="h-3.5 w-3.5" /> Monitoramento
           </button>
+          <button
+            onClick={() => setTab('geral')}
+            className={`flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${
+              docType === 'geral'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'border border-emerald-300 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+            }`}
+            title="Relatório Geral com Orçamento Completo + Montagem da Leira + Monitoramento"
+          >
+            <Layers className="h-3.5 w-3.5" /> Relatório Geral
+          </button>
 
-          {docType === 'monitoramento' && (
+          {(docType === 'monitoramento' || docType === 'geral') && (
             <button
               onClick={exportCsv}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               title="Exportar medições em CSV"
             >
               <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" /> CSV
@@ -288,13 +343,13 @@ export default function Relatorio() {
 
           <button
             onClick={() => window.print()}
-            className="btn-primary flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
+            className="btn-primary flex h-9 items-center gap-1.5 px-4 text-xs font-semibold"
           >
             <Download className="h-3.5 w-3.5" /> Baixar PDF
           </button>
           <button
             onClick={() => window.print()}
-            className="flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             title="Imprimir"
           >
             <Printer className="h-4 w-4" />
@@ -302,32 +357,217 @@ export default function Relatorio() {
         </div>
       </div>
 
-      {/* Painel Interativo de Campo (somente na aba Montagem da Leira) */}
-      {docType === 'montagem' && (
-        <div className={showFieldGuideOnPrint ? '' : 'no-print'}>
-          <div className="mx-auto max-w-4xl space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-2.5 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
-              <span className="font-semibold text-blue-900 dark:text-blue-200">
-                Guia Visual de Campo para o Operador / Agricultor (Seção Trapezoidal & Carga por Leira)
-              </span>
-              <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-blue-800 dark:text-blue-300">
+      {/* BARRA DE CONFIGURAÇÃO DA MONTAGEM DA LEIRA (Organizada e compacta) */}
+      {(docType === 'montagem' || (docType === 'geral' && geralIncMontagem)) && (
+        <div className="no-print mx-auto max-w-4xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
+              <Ruler className="h-4 w-4 text-blue-600" />
+              <span>Opções da Montagem da Leira no PDF:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex cursor-pointer items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={showDiagramInMontagem}
+                  onChange={(e) => setShowDiagramInMontagem(e.target.checked)}
+                  className="rounded border-slate-300 text-emerald-600"
+                />
+                Incluir desenho trapezoidal da leira
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 font-medium text-slate-700 dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={showFieldGuideOnPrint}
                   onChange={(e) => setShowFieldGuideOnPrint(e.target.checked)}
-                  className="rounded border-blue-400"
+                  className="rounded border-slate-300 text-emerald-600"
                 />
-                Incluir diagrama e guia de conchas na impressão do PDF
+                Incluir colunas de campo (Kg/10m, Ton/leira e Conchas)
               </label>
             </div>
-            <WindrowCrossSectionDiagram
-              alturaM={o.leiraAlturaM}
-              baseMenorM={o.leiraBaseMenorM}
-              baseMaiorM={o.leiraBaseMaiorM}
-              secaoM2={o.secaoM2}
-              extensaoLeiraM={o.leiraExtensaoM}
-              nrLeiras={o.nrLeiras}
-            />
+          </div>
+        </div>
+      )}
+
+      {/* BARRA DE CONFIGURAÇÃO DO RELATÓRIO GERAL E MONITORAMENTO */}
+      {(docType === 'geral' || docType === 'monitoramento') && (
+        <div className="no-print mx-auto max-w-4xl">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 text-xs shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            {docType === 'geral' && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
+                <div className="font-bold text-slate-800 dark:text-slate-100">
+                  Seções do Relatório Geral (em 1 único PDF):
+                </div>
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={geralIncOrcamento}
+                      onChange={(e) => setGeralIncOrcamento(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600"
+                    />
+                    1. Orçamento Completo
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={geralIncMontagem}
+                      onChange={(e) => setGeralIncMontagem(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600"
+                    />
+                    2. Montagem da Leira (Kg/m)
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={geralIncMonitoramento}
+                      onChange={(e) => setGeralIncMonitoramento(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600"
+                    />
+                    3. Monitoramento das Leiras
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {(docType === 'monitoramento' ||
+              (docType === 'geral' && geralIncMonitoramento)) && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-slate-800 dark:text-slate-100">
+                    O que imprimir do Monitoramento:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonitShowChart(true);
+                      setMonitShowTable(false);
+                      setMonitShowConclusao(false);
+                    }}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      monitShowChart && !monitShowTable && !monitShowConclusao
+                        ? 'bg-emerald-600 text-white'
+                        : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    }`}
+                  >
+                    Apenas o Gráfico
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonitShowChart(true);
+                      setMonitShowTable(false);
+                      setMonitShowConclusao(true);
+                    }}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      monitShowChart && !monitShowTable && monitShowConclusao
+                        ? 'bg-emerald-600 text-white'
+                        : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    }`}
+                  >
+                    Gráfico + Conclusão
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonitShowChart(true);
+                      setMonitShowTable(true);
+                      setMonitShowConclusao(true);
+                    }}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      monitShowChart && monitShowTable && monitShowConclusao
+                        ? 'bg-emerald-600 text-white'
+                        : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    }`}
+                  >
+                    Completo (Gráfico + Tabela)
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="flex cursor-pointer items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={monitShowChart}
+                      onChange={(e) => setMonitShowChart(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600"
+                    />
+                    Gráfico Térmico
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={monitShowTable}
+                      onChange={(e) => setMonitShowTable(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600"
+                    />
+                    Tabela de Medições
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={monitShowConclusao}
+                      onChange={(e) => setMonitShowConclusao(e.target.checked)}
+                      className="rounded border-slate-300 text-emerald-600"
+                    />
+                    Conclusão do Ciclo
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Filtro rápido de quais leiras aparecem no gráfico impresso */}
+            {(docType === 'monitoramento' ||
+              (docType === 'geral' && geralIncMonitoramento)) &&
+              todasLeirasNumeros.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-slate-500 mr-1">
+                      Leiras no PDF:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCustomSelectedLeiras(todasLeirasNumeros)}
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition ${
+                        leirasFiltradas.length === todasLeirasNumeros.length
+                          ? 'bg-slate-800 text-white dark:bg-white dark:text-slate-900'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                      }`}
+                    >
+                      Todas ({todasLeirasNumeros.length})
+                    </button>
+                    {todasLeirasNumeros.map((numLeira, idx) => {
+                      const active = leirasFiltradas.includes(numLeira);
+                      const color =
+                        BASE44_LEIRA_COLORS[idx % BASE44_LEIRA_COLORS.length];
+                      return (
+                        <button
+                          key={numLeira}
+                          type="button"
+                          onClick={() => toggleLeiraFiltro(numLeira)}
+                          className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition ${
+                            active
+                              ? 'border-emerald-500/50 bg-emerald-50/70 text-slate-900 dark:bg-emerald-950/40 dark:text-white'
+                              : 'border-slate-200 bg-white text-slate-400 opacity-60 dark:border-slate-800 dark:bg-slate-900'
+                          }`}
+                        >
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: color }}
+                          />
+                          L{numLeira}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Link
+                    to={`/orcamentos/${o.id}/monitoramento`}
+                    className="text-[11px] font-semibold text-emerald-600 hover:underline"
+                  >
+                    Abrir Tela de Monitoramento →
+                  </Link>
+                </div>
+              )}
           </div>
         </div>
       )}
@@ -721,7 +961,8 @@ export default function Relatorio() {
         {/* ========================================================================= */}
         {/* 2. DOCUMENTO: ORÇAMENTO COMPLETO (JSe Base44)                             */}
         {/* ========================================================================= */}
-        {docType === 'completo' && (
+        {(docType === 'completo' ||
+          (docType === 'geral' && geralIncOrcamento)) && (
           <div className="space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
@@ -1208,8 +1449,15 @@ export default function Relatorio() {
         {/* ========================================================================= */}
         {/* 3. DOCUMENTO: PLANEJAMENTO PARA MONTAGEM DA LEIRA (Uz Base44)             */}
         {/* ========================================================================= */}
-        {docType === 'montagem' && (
-          <div className="space-y-6">
+        {(docType === 'montagem' ||
+          (docType === 'geral' && geralIncMontagem)) && (
+          <div
+            className={
+              docType === 'geral' && geralIncOrcamento
+                ? 'print-section-divider space-y-6'
+                : 'space-y-6'
+            }
+          >
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -1224,7 +1472,9 @@ export default function Relatorio() {
               </div>
               <div className="text-right text-xs text-slate-500">
                 <div>Emissão: 12/10/2026</div>
-                <div>Página: 1</div>
+                <div>
+                  Página: {docType === 'geral' && geralIncOrcamento ? '2' : '1'}
+                </div>
               </div>
             </div>
 
@@ -1313,69 +1563,82 @@ export default function Relatorio() {
             </div>
 
             {/* GEOMETRIA DA LEIRA */}
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="h-4 w-1 bg-blue-600" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                  GEOMETRIA DA LEIRA
-                </h3>
+            <div className="space-y-4">
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="h-4 w-1 bg-blue-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    GEOMETRIA DA LEIRA
+                  </h3>
+                </div>
+                <div className="grid grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      ALTURA (MT)
+                    </span>
+                    <div className="font-bold text-slate-800">
+                      {num(o.leiraAlturaM)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      BASE MENOR (MT)
+                    </span>
+                    <div className="font-bold text-slate-800">
+                      {num(o.leiraBaseMenorM)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      BASE MAIOR (MT)
+                    </span>
+                    <div className="font-bold text-slate-800">
+                      {num(o.leiraBaseMaiorM)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      SECÇÃO (M²)
+                    </span>
+                    <div className="font-bold text-slate-800">{num(o.secaoM2)}</div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      EXT. TOTAL (MT)
+                    </span>
+                    <div className="font-bold text-slate-800">
+                      {num(extTotal, 0)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      EXTENSÃO LEIRA (MT)
+                    </span>
+                    <div className="font-bold text-slate-800">
+                      {num(o.leiraExtensaoM)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase text-slate-400">
+                      NR. LEIRAS
+                    </span>
+                    <div className="font-bold text-slate-800">
+                      {num(o.nrLeiras, 1)}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-4 gap-y-3 gap-x-4 text-xs">
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    ALTURA (MT)
-                  </span>
-                  <div className="font-bold text-slate-800">
-                    {num(o.leiraAlturaM)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    BASE MENOR (MT)
-                  </span>
-                  <div className="font-bold text-slate-800">
-                    {num(o.leiraBaseMenorM)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    BASE MAIOR (MT)
-                  </span>
-                  <div className="font-bold text-slate-800">
-                    {num(o.leiraBaseMaiorM)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    SECÇÃO (M²)
-                  </span>
-                  <div className="font-bold text-slate-800">{num(o.secaoM2)}</div>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    EXT. TOTAL (MT)
-                  </span>
-                  <div className="font-bold text-slate-800">
-                    {num(extTotal, 0)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    EXTENSÃO LEIRA (MT)
-                  </span>
-                  <div className="font-bold text-slate-800">
-                    {num(o.leiraExtensaoM)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase text-slate-400">
-                    NR. LEIRAS
-                  </span>
-                  <div className="font-bold text-slate-800">
-                    {num(o.nrLeiras, 1)}
-                  </div>
-                </div>
-              </div>
+
+              {showDiagramInMontagem && (
+                <WindrowCrossSectionDiagram
+                  alturaM={o.leiraAlturaM}
+                  baseMenorM={o.leiraBaseMenorM}
+                  baseMaiorM={o.leiraBaseMaiorM}
+                  secaoM2={o.secaoM2}
+                  extensaoLeiraM={o.leiraExtensaoM}
+                  nrLeiras={o.nrLeiras}
+                />
+              )}
             </div>
 
             {/* PRODUTO - KG/M */}
@@ -1473,8 +1736,15 @@ export default function Relatorio() {
         {/* ========================================================================= */}
         {/* 4. DOCUMENTO: MONITORAMENTO DAS LEIRAS (Q3e + U3e Base44)                 */}
         {/* ========================================================================= */}
-        {docType === 'monitoramento' && (
-          <div className="space-y-6">
+        {(docType === 'monitoramento' ||
+          (docType === 'geral' && geralIncMonitoramento)) && (
+          <div
+            className={
+              docType === 'geral' && (geralIncOrcamento || geralIncMontagem)
+                ? 'print-section-divider space-y-6'
+                : 'space-y-6'
+            }
+          >
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -1506,296 +1776,304 @@ export default function Relatorio() {
             )}
 
             {/* Legend */}
-            <div className="flex flex-wrap items-center gap-3 text-[11px]">
-              {leirasFiltradas.map((numLeira, idx) => (
-                <span
-                  key={numLeira}
-                  className="flex items-center gap-1 font-medium"
-                >
+            {monitShowChart && (
+              <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                {leirasFiltradas.map((numLeira, idx) => (
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{
-                      background:
-                        BASE44_LEIRA_COLORS[idx % BASE44_LEIRA_COLORS.length],
-                    }}
-                  />
-                  Leira {numLeira}
-                </span>
-              ))}
-            </div>
+                    key={numLeira}
+                    className="flex items-center gap-1 font-medium"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{
+                        background:
+                          BASE44_LEIRA_COLORS[idx % BASE44_LEIRA_COLORS.length],
+                      }}
+                    />
+                    Leira {numLeira}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Dynamic SVG Chart (Fiel ao U3e do Base44) */}
-            <div className="relative rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div className="mb-2 text-xs text-slate-500">
-                <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-emerald-200" />
-                Faixa boa: 45 a 65°C (compostagem ativa)
-              </div>
-              {(() => {
-                const w = 680;
-                const h = 210;
-                const pL = 44;
-                const pR = 20;
-                const pT = 16;
-                const pB = 28;
-                const gW = w - pL - pR;
-                const gH = h - pT - pB;
-                const maxT = 80;
-                const xAt = (i: number) =>
-                  datasGrafico.length <= 1
-                    ? pL + gW / 2
-                    : pL + (i / (datasGrafico.length - 1)) * gW;
-                const yAt = (t: number) =>
-                  pT + gH - (Math.max(0, Math.min(maxT, t)) / maxT) * gH;
-                const y65 = yAt(65);
-                const y45 = yAt(45);
+            {monitShowChart && (
+              <div className="relative rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-2 text-xs text-slate-500">
+                  <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-emerald-200" />
+                  Faixa boa: 45 a 65°C (compostagem ativa)
+                </div>
+                {(() => {
+                  const w = 680;
+                  const h = 210;
+                  const pL = 44;
+                  const pR = 20;
+                  const pT = 16;
+                  const pB = 28;
+                  const gW = w - pL - pR;
+                  const gH = h - pT - pB;
+                  const maxT = 80;
+                  const xAt = (i: number) =>
+                    datasGrafico.length <= 1
+                      ? pL + gW / 2
+                      : pL + (i / (datasGrafico.length - 1)) * gW;
+                  const yAt = (t: number) =>
+                    pT + gH - (Math.max(0, Math.min(maxT, t)) / maxT) * gH;
+                  const y65 = yAt(65);
+                  const y45 = yAt(45);
 
-                return (
-                  <svg viewBox={`0 0 ${w} ${h}`} className="w-full">
-                    {/* Faixa Ideal 45 a 65°C */}
-                    <rect
-                      x={pL}
-                      y={y65}
-                      width={gW}
-                      height={y45 - y65}
-                      fill="#10b981"
-                      fillOpacity="0.16"
-                    />
-                    <line
-                      x1={pL}
-                      x2={pL + gW}
-                      y1={y65}
-                      y2={y65}
-                      stroke="#10b981"
-                      strokeDasharray="4 4"
-                      strokeWidth="1"
-                    />
-                    <line
-                      x1={pL}
-                      x2={pL + gW}
-                      y1={y45}
-                      y2={y45}
-                      stroke="#10b981"
-                      strokeDasharray="4 4"
-                      strokeWidth="1"
-                    />
+                  return (
+                    <svg viewBox={`0 0 ${w} ${h}`} className="w-full">
+                      {/* Faixa Ideal 45 a 65°C */}
+                      <rect
+                        x={pL}
+                        y={y65}
+                        width={gW}
+                        height={y45 - y65}
+                        fill="#10b981"
+                        fillOpacity="0.16"
+                      />
+                      <line
+                        x1={pL}
+                        x2={pL + gW}
+                        y1={y65}
+                        y2={y65}
+                        stroke="#10b981"
+                        strokeDasharray="4 4"
+                        strokeWidth="1"
+                      />
+                      <line
+                        x1={pL}
+                        x2={pL + gW}
+                        y1={y45}
+                        y2={y45}
+                        stroke="#10b981"
+                        strokeDasharray="4 4"
+                        strokeWidth="1"
+                      />
 
-                    {/* Grade Y */}
-                    {[0, 20, 40, 60, 80].map((tv) => {
-                      const y = yAt(tv);
-                      return (
-                        <g key={tv}>
-                          <line
-                            x1={pL}
-                            x2={pL + gW}
-                            y1={y}
-                            y2={y}
-                            stroke="#e2e8f0"
-                            strokeDasharray="2 2"
-                          />
-                          <text
-                            x={pL - 6}
-                            y={y + 3}
-                            textAnchor="end"
-                            fontSize="9"
-                            fill="#64748b"
-                          >
-                            {tv}°
-                          </text>
-                        </g>
-                      );
-                    })}
-
-                    {/* Datas X */}
-                    {datasGrafico.map((dt, idx) => (
-                      <text
-                        key={dt}
-                        x={xAt(idx)}
-                        y={h - 6}
-                        textAnchor="middle"
-                        fontSize="9.5"
-                        fill="#475569"
-                      >
-                        {dt.slice(5).split('-').reverse().join('/')}
-                      </text>
-                    ))}
-
-                    {/* Linhas de cada Leira */}
-                    {leirasFiltradas.map((ln, lIdx) => {
-                      const color = getLeiraColor(ln, leirasFiltradas);
-                      const pts = datasGrafico
-                        .map((dt, dIdx) => {
-                          const matches = medicoes.filter(
-                            (m) =>
-                              m.data === dt && Number(m.leiraNumero) === ln
-                          );
-                          const best =
-                            matches.find((m) => m.media > 0) || matches[0];
-                          if (!best) return null;
-                          return {
-                            x: xAt(dIdx),
-                            y: yAt(best.media),
-                            media: best.media,
-                          };
-                        })
-                        .filter(Boolean) as {
-                        x: number;
-                        y: number;
-                        media: number;
-                      }[];
-
-                      if (pts.length === 0) return null;
-                      // Se todos os pontos forem 0, não polui o gráfico impresso exceto se for a única leira
-                      if (
-                        pts.every((p) => p.media === 0) &&
-                        leirasFiltradas.length > 1
-                      ) {
-                        return null;
-                      }
-
-                      const dPath = pts
-                        .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
-                        .join(' ');
-
-                      return (
-                        <g key={`${ln}-${lIdx}`}>
-                          {pts.length > 1 && (
-                            <path
-                              d={dPath}
-                              fill="none"
-                              stroke={color}
-                              strokeWidth="2.2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
+                      {/* Grade Y */}
+                      {[0, 20, 40, 60, 80].map((tv) => {
+                        const y = yAt(tv);
+                        return (
+                          <g key={tv}>
+                            <line
+                              x1={pL}
+                              x2={pL + gW}
+                              y1={y}
+                              y2={y}
+                              stroke="#e2e8f0"
+                              strokeDasharray="2 2"
                             />
-                          )}
-                          {pts.map((p, pi) => (
-                            <circle
-                              key={pi}
-                              cx={p.x}
-                              cy={p.y}
-                              r="3.2"
-                              fill={
-                                p.media > 65 || p.media < 45 ? '#fff' : color
-                              }
-                              stroke={
-                                p.media > 65
-                                  ? '#dc2626'
-                                  : p.media < 45
-                                  ? '#f59e0b'
-                                  : color
-                              }
-                              strokeWidth="2"
-                            />
-                          ))}
-                        </g>
-                      );
-                    })}
-                  </svg>
-                );
-              })()}
-            </div>
+                            <text
+                              x={pL - 6}
+                              y={y + 3}
+                              textAnchor="end"
+                              fontSize="9"
+                              fill="#64748b"
+                            >
+                              {tv}°
+                            </text>
+                          </g>
+                        );
+                      })}
 
-            {/* HISTÓRICO DE MEDIÇÕES */}
-            <div>
-              <div className="mb-1 flex items-center gap-2">
-                <span className="h-4 w-1 bg-emerald-600" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                  HISTÓRICO DE MEDIÇÕES
-                </h3>
-              </div>
-              <p className="mb-2 text-[10px] text-slate-500">
-                Faixa ideal de compostagem ativa: 45 °C a 65 °C
-              </p>
-
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase text-slate-600">
-                    <th className="py-2 px-2">DATA</th>
-                    <th className="px-2">LEIRA</th>
-                    <th className="px-2 text-right">PONTO 1 (°C)</th>
-                    <th className="px-2 text-right">PONTO 2 (°C)</th>
-                    <th className="px-2 text-right">PONTO 3 (°C)</th>
-                    <th className="px-2 text-right">MÉDIA (°C)</th>
-                    <th className="px-2 text-right">UMIDADE (%)</th>
-                    <th className="px-2">ÁGUA E REVOLVIMENTO</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {medicoes.map((m) => {
-                    const isIdeal = m.media >= 45 && m.media <= 65;
-                    const isLow = m.media > 0 && m.media < 45;
-                    return (
-                      <tr key={m.id} className="hover:bg-slate-50/50">
-                        <td className="py-1.5 px-2 text-slate-600">
-                          {m.data.split('-').reverse().join('/')}
-                        </td>
-                        <td className="px-2 font-medium">
-                          Leira {m.leiraNumero}
-                        </td>
-                        <td className="px-2 text-right">{num(m.ponto1, 1)}</td>
-                        <td className="px-2 text-right">{num(m.ponto2, 1)}</td>
-                        <td className="px-2 text-right">{num(m.ponto3, 1)}</td>
-                        <td
-                          className={`px-2 text-right font-bold ${
-                            isIdeal
-                              ? 'text-emerald-600'
-                              : isLow
-                              ? 'text-amber-600'
-                              : 'text-slate-800'
-                          }`}
+                      {/* Datas X */}
+                      {datasGrafico.map((dt, idx) => (
+                        <text
+                          key={dt}
+                          x={xAt(idx)}
+                          y={h - 6}
+                          textAnchor="middle"
+                          fontSize="9.5"
+                          fill="#475569"
                         >
-                          {num(m.media, 1)}
-                        </td>
-                        <td className="px-2 text-right">{m.umidadePct}%</td>
-                        <td className="px-2 text-slate-500">
-                          {m.aguaRevolvimento === 'Nenhum'
-                            ? '—'
-                            : m.aguaRevolvimento}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          {dt.slice(5).split('-').reverse().join('/')}
+                        </text>
+                      ))}
 
-            {/* CONCLUSÃO DO CICLO */}
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <span className="h-4 w-1 bg-emerald-600" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                  CONCLUSÃO DO CICLO
-                </h3>
+                      {/* Linhas de cada Leira */}
+                      {leirasFiltradas.map((ln, lIdx) => {
+                        const color = getLeiraColor(ln, leirasFiltradas);
+                        const pts = datasGrafico
+                          .map((dt, dIdx) => {
+                            const matches = medicoes.filter(
+                              (m) =>
+                                m.data === dt && Number(m.leiraNumero) === ln
+                            );
+                            const best =
+                              matches.find((m) => m.media > 0) || matches[0];
+                            if (!best) return null;
+                            return {
+                              x: xAt(dIdx),
+                              y: yAt(best.media),
+                              media: best.media,
+                            };
+                          })
+                          .filter(Boolean) as {
+                          x: number;
+                          y: number;
+                          media: number;
+                        }[];
+
+                        if (pts.length === 0) return null;
+                        // Se todos os pontos forem 0, não polui o gráfico impresso exceto se for a única leira
+                        if (
+                          pts.every((p) => p.media === 0) &&
+                          leirasFiltradas.length > 1
+                        ) {
+                          return null;
+                        }
+
+                        const dPath = pts
+                          .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
+                          .join(' ');
+
+                        return (
+                          <g key={`${ln}-${lIdx}`}>
+                            {pts.length > 1 && (
+                              <path
+                                d={dPath}
+                                fill="none"
+                                stroke={color}
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            )}
+                            {pts.map((p, pi) => (
+                              <circle
+                                key={pi}
+                                cx={p.x}
+                                cy={p.y}
+                                r="3.2"
+                                fill={
+                                  p.media > 65 || p.media < 45 ? '#fff' : color
+                                }
+                                stroke={
+                                  p.media > 65
+                                    ? '#dc2626'
+                                    : p.media < 45
+                                    ? '#f59e0b'
+                                    : color
+                                }
+                                strokeWidth="2"
+                              />
+                            ))}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  );
+                })()}
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-3xl font-extrabold text-emerald-600">
-                    {naFaixa}
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    dias na faixa ideal
-                  </div>
+            )}
+
+            {/* HISTÓRICO DE MEDIÇÕES (Opcional conforme seleção do usuário) */}
+            {monitShowTable && (
+              <div>
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="h-4 w-1 bg-emerald-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    HISTÓRICO DE MEDIÇÕES
+                  </h3>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-3xl font-extrabold text-slate-900">
-                    {num(maxTemp, 0)}°C
-                  </div>
-                  <div className="text-xs text-slate-600">máxima atingida</div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-3xl font-extrabold text-slate-900">
-                    {totalMedicoes}
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    medições no total
-                  </div>
-                </div>
+                <p className="mb-2 text-[10px] text-slate-500">
+                  Faixa ideal de compostagem ativa: 45 °C a 65 °C
+                </p>
+
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase text-slate-600">
+                      <th className="py-2 px-2">DATA</th>
+                      <th className="px-2">LEIRA</th>
+                      <th className="px-2 text-right">PONTO 1 (°C)</th>
+                      <th className="px-2 text-right">PONTO 2 (°C)</th>
+                      <th className="px-2 text-right">PONTO 3 (°C)</th>
+                      <th className="px-2 text-right">MÉDIA (°C)</th>
+                      <th className="px-2 text-right">UMIDADE (%)</th>
+                      <th className="px-2">ÁGUA E REVOLVIMENTO</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {medicoes.map((m) => {
+                      const isIdeal = m.media >= 45 && m.media <= 65;
+                      const isLow = m.media > 0 && m.media < 45;
+                      return (
+                        <tr key={m.id} className="hover:bg-slate-50/50">
+                          <td className="py-1.5 px-2 text-slate-600">
+                            {m.data.split('-').reverse().join('/')}
+                          </td>
+                          <td className="px-2 font-medium">
+                            Leira {m.leiraNumero}
+                          </td>
+                          <td className="px-2 text-right">{num(m.ponto1, 1)}</td>
+                          <td className="px-2 text-right">{num(m.ponto2, 1)}</td>
+                          <td className="px-2 text-right">{num(m.ponto3, 1)}</td>
+                          <td
+                            className={`px-2 text-right font-bold ${
+                              isIdeal
+                                ? 'text-emerald-600'
+                                : isLow
+                                ? 'text-amber-600'
+                                : 'text-slate-800'
+                            }`}
+                          >
+                            {num(m.media, 1)}
+                          </td>
+                          <td className="px-2 text-right">{m.umidadePct}%</td>
+                          <td className="px-2 text-slate-500">
+                            {m.aguaRevolvimento === 'Nenhum'
+                              ? '—'
+                              : m.aguaRevolvimento}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <p className="mt-3 text-xs text-slate-600">
-                O ciclo teve {totalMedicoes} medições: {naFaixa} na faixa ideal,{' '}
-                {acimaLimite} acima do limite e {abaixoLimite} abaixo.
-              </p>
-            </div>
+            )}
+
+            {/* CONCLUSÃO DO CICLO (Opcional conforme seleção do usuário) */}
+            {monitShowConclusao && (
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="h-4 w-1 bg-emerald-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                    CONCLUSÃO DO CICLO
+                  </h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-3xl font-extrabold text-emerald-600">
+                      {naFaixa}
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      dias na faixa ideal
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-3xl font-extrabold text-slate-900">
+                      {num(maxTemp, 0)}°C
+                    </div>
+                    <div className="text-xs text-slate-600">máxima atingida</div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-3xl font-extrabold text-slate-900">
+                      {totalMedicoes}
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      medições no total
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-slate-600">
+                  O ciclo teve {totalMedicoes} medições: {naFaixa} na faixa ideal,{' '}
+                  {acimaLimite} acima do limite e {abaixoLimite} abaixo.
+                </p>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-slate-100 pt-6 text-[10px] text-slate-400">

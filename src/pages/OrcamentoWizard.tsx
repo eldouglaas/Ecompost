@@ -451,12 +451,13 @@ export default function OrcamentoWizard() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Header & Ações da Leira/Projeto */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => nav('/orcamentos')}
-            className="rounded-lg p-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+            className="rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5"
+            title="Voltar para Orçamentos"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -465,32 +466,50 @@ export default function OrcamentoWizard() {
               {id ? `Orçamento #${o.numero}` : 'Novo Orçamento'}
             </h1>
             {o.clienteNome && (
-              <p className="text-xs text-slate-500">{o.clienteNome}</p>
+              <p className="text-xs text-slate-500">
+                {o.clienteNome}
+                {o.propriedade ? ` · ${o.propriedade}` : ''}
+              </p>
             )}
           </div>
         </div>
         {id && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setMontagemModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-300"
+              title="Abrir planejamento de Montagem da Leira (Kg/m e Conchas)"
             >
-              <Ruler className="h-3.5 w-3.5" /> Montagem de Leira
+              <Ruler className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              Montagem da Leira
             </button>
             <button
               type="button"
-              className="btn-secondary text-xs font-semibold"
               onClick={() => nav(`/orcamentos/${o.id}/monitoramento`)}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300"
+              title="Lançar temperaturas e acompanhar gráfico das leiras"
             >
-              <Thermometer className="h-4 w-4 text-amber-500" /> Monitoramento de Leira
+              <Thermometer className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              Monitoramento de Leira
             </button>
             <button
               type="button"
-              className="btn-secondary text-xs font-semibold"
               onClick={() => nav(`/orcamentos/${o.id}/relatorio`)}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              title="Abrir Relatórios Individuais"
             >
-              <Printer className="h-4 w-4" /> Relatório
+              <Printer className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+              Relatórios
+            </button>
+            <button
+              type="button"
+              onClick={() => nav(`/orcamentos/${o.id}/relatorio?tab=geral`)}
+              className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+              title="Emitir Relatório Geral (Orçamento Completo + Montagem + Monitoramento)"
+            >
+              <Printer className="h-4 w-4" />
+              Relatório Geral (PDF)
             </button>
           </div>
         )}
@@ -634,11 +653,33 @@ export default function OrcamentoWizard() {
               </div>
             </div>
 
-            <div>
-              <h2 className="text-base font-bold">Tamanho das Leiras</h2>
-              <p className="mb-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                Como vai ser a leira no campo — altura e largura da base (seção trapezoidal).
-              </p>
+            <div className="border-t pt-5" style={{ borderColor: 'var(--border-card)' }}>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-base font-bold">Tamanho e Geometria das Leiras</h2>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Como vai ser a leira no campo — altura e largura da base (seção trapezoidal).
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMontagemModalOpen(true)}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-300"
+                  >
+                    <Ruler className="h-3.5 w-3.5" /> Planejamento de Montagem (Kg/m)
+                  </button>
+                  {id && (
+                    <button
+                      type="button"
+                      onClick={() => nav(`/orcamentos/${o.id}/monitoramento`)}
+                      className="flex h-8 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300"
+                    >
+                      <Thermometer className="h-3.5 w-3.5" /> Monitorar Leiras
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="grid gap-4 md:grid-cols-4">
                 <Field label="Altura (m)">
                   <Input
@@ -712,11 +753,11 @@ export default function OrcamentoWizard() {
                 <button
                   type="button"
                   onClick={() => setMontagemModalOpen(true)}
-                  className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-300"
                 >
-                  <Ruler className="h-3.5 w-3.5" /> MONTAGEM LEIRA
+                  <Ruler className="h-3.5 w-3.5" /> Montagem da Leira (Kg/m)
                 </button>
-                <button type="button" className="btn-primary text-xs" onClick={addItem}>
+                <button type="button" className="btn-primary h-9 text-xs" onClick={addItem}>
                   <Plus className="h-4 w-4" /> Adicionar Ingrediente
                 </button>
               </div>
