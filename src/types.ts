@@ -2,6 +2,28 @@ export type StatusCliente = 'Ativo' | 'Inativo';
 export type TipoProduto = 'Orgânico' | 'Mineral' | 'Biológico';
 export type SituacaoOrcamento = 'Aberto' | 'Aprovado' | 'Cancelado';
 
+export interface UserProfile {
+  id: string;
+  nome: string;
+  email: string;
+  cargo: string;
+  registroProfissional: string; // CREA / CFTA
+  telefone: string;
+  empresaFazenda: string;
+  cidade: string;
+  uf: string;
+  avatarUrl?: string;
+  preferencias: {
+    consultorPadrao: string;
+    umidadeFinalPadrao: number;
+    leiraAlturaPadrao: number;
+    leiraBaseMenorPadrao: number;
+    leiraBaseMaiorPadrao: number;
+    leiraExtensaoPadrao: number;
+    capacidadeConchaM3: number;
+  };
+}
+
 export interface Cliente {
   id: string;
   nome: string;
@@ -56,6 +78,8 @@ export interface ItemReceitaComposto {
   valorUnitario: number;
   subtotal: number;
   kgPorMetro?: number;
+  custoHa?: number;
+  volumeM3?: number;
 }
 
 export interface MedicaoLeiraPonto {
@@ -79,7 +103,7 @@ export interface Orcamento {
   consultor: string;
   propriedade: string;
   descricao: string;
-  
+
   // Parâmetros Técnicos
   umidadeFinalPct: number;
   doseCompostoTnHa: number;
