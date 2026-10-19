@@ -304,6 +304,12 @@ body {
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .print-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
   .print-section-divider {
     margin-top: 0 !important;

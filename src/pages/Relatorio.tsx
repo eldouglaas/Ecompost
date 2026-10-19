@@ -244,48 +244,59 @@ export default function Relatorio() {
     try {
       const container = reportContainerRef.current;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 8; // 8mm margem simétrica
+      const usableWidth = pdfWidth - margin * 2; // 194mm
+      const usableHeight = pdfHeight - margin * 2; // 281mm
 
-      const sections = Array.from(
-        container.querySelectorAll<HTMLElement>('[data-pdf-section="true"]')
+      // Busca todas as páginas explicitamente demarcadas no documento
+      const pageElements = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-pdf-page="true"]')
       );
-      const targetElements = sections.length > 0 ? sections : [container];
+      const targetElements = pageElements.length > 0 ? pageElements : [container];
 
       for (let i = 0; i < targetElements.length; i++) {
-        const secEl = targetElements[i];
+        const el = targetElements[i];
         if (i > 0) {
           pdf.addPage();
         }
 
-        const canvas = await html2canvas(secEl, {
+        const canvas = await html2canvas(el, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          windowWidth: 950,
+          windowWidth: 880,
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
 
-        if (imgHeight <= pdfHeight) {
-          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
-        } else {
-          let heightLeft = imgHeight;
-          let position = 0;
-          pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
-          heightLeft -= pdfHeight;
+        const aspect = canvasW / canvasH;
+        let renderW = usableWidth;
+        let renderH = renderW / aspect;
 
-          while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
-            heightLeft -= pdfHeight;
-          }
+        // Se a altura passar da folha útil, escala proporcionalmente para caber 100% sem cortes
+        if (renderH > usableHeight) {
+          renderH = usableHeight;
+          renderW = renderH * aspect;
         }
+
+        const posX = margin + (usableWidth - renderW) / 2;
+        const posY = margin + (usableHeight - renderH) / 2;
+
+        pdf.addImage(
+          imgData,
+          'JPEG',
+          posX,
+          posY,
+          renderW,
+          renderH,
+          undefined,
+          'FAST'
+        );
       }
 
       const sanitize = (str: string) => str.replace(/[^a-zA-Z0-9_\-]/g, '_');
@@ -670,15 +681,15 @@ export default function Relatorio() {
       )}
 
       {/* DOCUMENT PREVIEW CONTAINER */}
-      <div
-        ref={reportContainerRef}
-        className="card print-page mx-auto max-w-4xl bg-white p-10 font-sans text-slate-800 shadow-md"
-      >
+      <div ref={reportContainerRef} className="mx-auto max-w-4xl space-y-6">
         {/* ========================================================================= */}
         {/* 1. DOCUMENTO: PROJETO DE COMPOSTAGEM FINAL (RESUMIDO — YSe Base44)         */}
         {/* ========================================================================= */}
         {docType === 'resumido' && (
-          <div data-pdf-section="true" className="space-y-6">
+          <div
+            data-pdf-page="true"
+            className="card print-page bg-white p-7 sm:p-8 font-sans text-slate-800 shadow-md rounded-xl space-y-3.5"
+          >
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -1063,7 +1074,10 @@ export default function Relatorio() {
         {/* ========================================================================= */}
         {(docType === 'completo' ||
           (docType === 'geral' && geralIncOrcamento)) && (
-          <div data-pdf-section="true" className="space-y-6">
+          <div
+            data-pdf-page="true"
+            className="card print-page bg-white p-7 sm:p-8 font-sans text-slate-800 shadow-md rounded-xl space-y-3.5"
+          >
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -1552,17 +1566,17 @@ export default function Relatorio() {
         {(docType === 'montagem' ||
           (docType === 'geral' && geralIncMontagem)) && (
           <div
-            data-pdf-section="true"
-            className={
+            data-pdf-page="true"
+            className={`card print-page bg-white p-7 sm:p-8 font-sans text-slate-800 shadow-md rounded-xl space-y-3.5 ${
               docType === 'geral' && geralIncOrcamento
-                ? 'print-section-divider space-y-6'
-                : 'space-y-6'
-            }
+                ? 'print-section-divider'
+                : ''
+            }`}
           >
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-2 rounded-full bg-blue-600" />
+                <div className="h-10 w-2 rounded-full bg-blue-600" />
                 <div>
                   <div className="text-xl font-bold tracking-tight text-slate-900 leading-tight">
                     PLANEJAMENTO PARA
@@ -1581,13 +1595,13 @@ export default function Relatorio() {
 
             {/* IDENTIFICAÇÃO */}
             <div>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="h-4 w-1 bg-blue-600" />
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="h-3.5 w-1 bg-blue-600" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                   IDENTIFICAÇÃO
                 </h3>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-xs">
+              <div className="grid grid-cols-3 gap-3 text-xs">
                 <div>
                   <span className="text-[10px] uppercase text-slate-400">
                     CLIENTE
@@ -1623,13 +1637,13 @@ export default function Relatorio() {
 
             {/* PARÂMETROS */}
             <div>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="h-4 w-1 bg-blue-600" />
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="h-3.5 w-1 bg-blue-600" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                   PARÂMETROS
                 </h3>
               </div>
-              <div className="grid grid-cols-4 gap-4 text-xs">
+              <div className="grid grid-cols-4 gap-3 text-xs">
                 <div>
                   <span className="text-[10px] uppercase text-slate-400">
                     UMID. FINAL (%)
@@ -1664,15 +1678,15 @@ export default function Relatorio() {
             </div>
 
             {/* GEOMETRIA DA LEIRA */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="h-4 w-1 bg-blue-600" />
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="h-3.5 w-1 bg-blue-600" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                     GEOMETRIA DA LEIRA
                   </h3>
                 </div>
-                <div className="grid grid-cols-4 gap-y-3 gap-x-4 text-xs">
+                <div className="grid grid-cols-4 gap-y-2 gap-x-3 text-xs">
                   <div>
                     <span className="text-[10px] uppercase text-slate-400">
                       ALTURA (MT)
@@ -1732,6 +1746,7 @@ export default function Relatorio() {
 
               {showDiagramInMontagem && (
                 <WindrowCrossSectionDiagram
+                  compact
                   alturaM={o.leiraAlturaM}
                   baseMenorM={o.leiraBaseMenorM}
                   baseMaiorM={o.leiraBaseMaiorM}
@@ -1744,8 +1759,8 @@ export default function Relatorio() {
 
             {/* PRODUTO - KG/M */}
             <div>
-              <div className="mb-2 flex items-center gap-2">
-                <span className="h-4 w-1 bg-blue-600" />
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="h-3.5 w-1 bg-blue-600" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                   PRODUTO - KG/M
                 </h3>
@@ -1753,15 +1768,15 @@ export default function Relatorio() {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-semibold text-slate-600">
-                    <th className="py-2 px-3">Produto</th>
-                    <th className="py-2 px-3 text-right">Kg / m</th>
+                    <th className="py-1.5 px-3">Produto</th>
+                    <th className="py-1.5 px-3 text-right">Kg / m</th>
                     {showFieldGuideOnPrint && (
                       <>
-                        <th className="py-2 px-3 text-right">Kg / 10m</th>
-                        <th className="py-2 px-3 text-right">
+                        <th className="py-1.5 px-3 text-right">Kg / 10m</th>
+                        <th className="py-1.5 px-3 text-right">
                           Ton / Leira ({o.leiraExtensaoM}m)
                         </th>
-                        <th className="py-2 px-3 text-right">
+                        <th className="py-1.5 px-3 text-right">
                           Conchas ({num(conchaPadrao, 1)}m³)/Leira
                         </th>
                       </>
@@ -1781,21 +1796,21 @@ export default function Relatorio() {
                         : 0;
                     return (
                       <tr key={it.id}>
-                        <td className="py-2 px-3 font-medium text-slate-800">
+                        <td className="py-1.5 px-3 font-medium text-slate-800">
                           {it.produtoNome}
                         </td>
-                        <td className="py-2 px-3 text-right font-semibold text-slate-900">
+                        <td className="py-1.5 px-3 text-right font-semibold text-slate-900">
                           {num(kgM, 2)}
                         </td>
                         {showFieldGuideOnPrint && (
                           <>
-                            <td className="py-2 px-3 text-right text-slate-700">
+                            <td className="py-1.5 px-3 text-right text-slate-700">
                               {num(kgM * 10, 0)} kg
                             </td>
-                            <td className="py-2 px-3 text-right text-slate-700">
+                            <td className="py-1.5 px-3 text-right text-slate-700">
                               {num(tnLeira, 2)} tn
                             </td>
-                            <td className="py-2 px-3 text-right font-semibold text-blue-700">
+                            <td className="py-1.5 px-3 text-right font-semibold text-blue-700">
                               ~{Math.ceil(conchas)}
                             </td>
                           </>
@@ -1804,16 +1819,16 @@ export default function Relatorio() {
                     );
                   })}
                   <tr className="border-t-2 border-slate-200 bg-slate-50 font-bold text-slate-900">
-                    <td className="py-2.5 px-3">TOTAL:</td>
-                    <td className="py-2.5 px-3 text-right">
+                    <td className="py-2 px-3">TOTAL:</td>
+                    <td className="py-2 px-3 text-right">
                       {num(totalKgM, 2)}
                     </td>
                     {showFieldGuideOnPrint && (
                       <>
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-2 px-3 text-right">
                           {num(totalKgM * 10, 0)} kg
                         </td>
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-2 px-3 text-right">
                           {num((totalKgM * o.leiraExtensaoM) / 1000, 2)} tn
                         </td>
                         <td />
@@ -1825,7 +1840,7 @@ export default function Relatorio() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between border-t border-slate-100 pt-8 text-[10px] text-slate-400">
+            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] text-slate-400">
               <span className="text-slate-600">
                 Ecompost — Ecologicamente Lucrativo
               </span>
@@ -1840,12 +1855,12 @@ export default function Relatorio() {
         {(docType === 'monitoramento' ||
           (docType === 'geral' && geralIncMonitoramento)) && (
           <div
-            data-pdf-section="true"
-            className={
+            data-pdf-page="true"
+            className={`card print-page bg-white p-7 sm:p-8 font-sans text-slate-800 shadow-md rounded-xl space-y-4 ${
               docType === 'geral' && (geralIncOrcamento || geralIncMontagem)
-                ? 'print-section-divider space-y-6'
-                : 'space-y-6'
-            }
+                ? 'print-section-divider'
+                : ''
+            }`}
           >
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">

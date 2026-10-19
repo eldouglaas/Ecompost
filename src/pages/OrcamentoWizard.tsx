@@ -132,6 +132,7 @@ export function WindrowCrossSectionDiagram({
   secaoM2,
   extensaoLeiraM,
   nrLeiras,
+  compact = false,
 }: {
   alturaM: number;
   baseMenorM: number;
@@ -139,20 +140,30 @@ export function WindrowCrossSectionDiagram({
   secaoM2: number;
   extensaoLeiraM: number;
   nrLeiras: number;
+  compact?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-blue-200/80 bg-blue-50/40 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
-          <Ruler className="h-4 w-4 text-blue-600" />
-          Geometria da Seção Trapezoidal da Leira (Corte Transversal)
+    <div
+      className={`rounded-2xl border border-blue-200/80 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/20 ${
+        compact ? 'p-2.5' : 'p-4'
+      }`}
+    >
+      <div className="mb-1.5 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
+          <Ruler className="h-3.5 w-3.5 text-blue-600" />
+          Geometria da Seção Trapezoidal (Corte Transversal)
         </div>
-        <span className="rounded-full bg-blue-600/10 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-300">
-          Área da Seção = {num(secaoM2, 2)} m²
+        <span className="rounded-full bg-blue-600/10 px-2 py-0.5 text-[10.5px] font-bold text-blue-700 dark:text-blue-300">
+          Área = {num(secaoM2, 2)} m²
         </span>
       </div>
-      <div className="grid items-center gap-4 md:grid-cols-2">
-        <svg viewBox="0 0 360 155" className="w-full max-w-[360px] mx-auto">
+      <div className="grid items-center gap-3 md:grid-cols-2">
+        <svg
+          viewBox="0 0 360 155"
+          className={`w-full mx-auto ${
+            compact ? 'max-w-[290px] max-h-[115px]' : 'max-w-[360px]'
+          }`}
+        >
           {/* Solo */}
           <line x1="20" x2="340" y1="125" y2="125" stroke="#64748b" strokeWidth="2" />
           {/* Trapézio em camadas (Lasanha Agronômica) */}
@@ -224,26 +235,40 @@ export function WindrowCrossSectionDiagram({
           </text>
         </svg>
 
-        <div className="space-y-2 text-xs">
-          <div className="rounded-xl bg-white/80 p-3 border border-blue-100 dark:bg-slate-900/70 dark:border-slate-800">
-            <div className="font-bold text-slate-800 dark:text-slate-100">
+        <div className="space-y-1.5 text-xs">
+          <div
+            className={`rounded-xl bg-white/80 border border-blue-100 dark:bg-slate-900/70 dark:border-slate-800 ${
+              compact ? 'p-2' : 'p-3'
+            }`}
+          >
+            <div className="font-bold text-slate-800 dark:text-slate-100 text-[11px]">
               Fórmula Agronômica do Trapézio:
             </div>
-            <div className="mt-1 font-mono text-[11px] text-blue-700 dark:text-blue-300">
-              Seção = ((B + b) ÷ 2) × h = (({num(baseMaiorM, 2)} + {num(baseMenorM, 2)}) ÷ 2) ×{' '}
+            <div className="mt-0.5 font-mono text-[10.5px] text-blue-700 dark:text-blue-300">
+              Seção = (({num(baseMaiorM, 2)} + {num(baseMenorM, 2)}) ÷ 2) ×{' '}
               {num(alturaM, 2)} = <b>{num(secaoM2, 2)} m²</b>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-white/80 p-2.5 border border-blue-100 dark:bg-slate-900/70 dark:border-slate-800">
-              <div className="text-[10px] uppercase text-slate-400">Volume por Leira ({num(extensaoLeiraM, 0)}m)</div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                {num(secaoM2 * extensaoLeiraM, 1)} m³ / leira
+          <div className="grid grid-cols-2 gap-1.5">
+            <div
+              className={`rounded-xl bg-white/80 border border-blue-100 dark:bg-slate-900/70 dark:border-slate-800 ${
+                compact ? 'p-2' : 'p-2.5'
+              }`}
+            >
+              <div className="text-[9.5px] uppercase text-slate-400">
+                Volume ({num(extensaoLeiraM, 0)}m)
+              </div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                {num(secaoM2 * extensaoLeiraM, 1)} m³/leira
               </div>
             </div>
-            <div className="rounded-xl bg-white/80 p-2.5 border border-blue-100 dark:bg-slate-900/70 dark:border-slate-800">
-              <div className="text-[10px] uppercase text-slate-400">Total de Leiras no Pátio</div>
-              <div className="text-sm font-bold text-blue-700 dark:text-blue-300">
+            <div
+              className={`rounded-xl bg-white/80 border border-blue-100 dark:bg-slate-900/70 dark:border-slate-800 ${
+                compact ? 'p-2' : 'p-2.5'
+              }`}
+            >
+              <div className="text-[9.5px] uppercase text-slate-400">Total Leiras</div>
+              <div className="text-xs font-bold text-blue-700 dark:text-blue-300">
                 {num(nrLeiras, 1)} leiras
               </div>
             </div>
