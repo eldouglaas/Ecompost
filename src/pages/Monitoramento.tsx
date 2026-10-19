@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -1346,117 +1347,119 @@ export default function Monitoramento() {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL: ESCOLHER LEIRAS PARA O PDF (Idêntico ao P3e do Base44)             */}
+      {/* MODAL: ESCOLHER LEIRAS PARA O PDF                                         */}
       {/* ========================================================================= */}
-      {pdfModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setPdfModalOpen(false)}
-        >
+      {pdfModalOpen &&
+        createPortal(
           <div
-            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+            onClick={() => setPdfModalOpen(false)}
           >
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <h3 className="text-base font-bold">Escolher leiras para o PDF</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Marque apenas as leiras que você quer mostrar no relatório impresso.
-                </p>
+            <div
+              className="relative w-full max-w-md my-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h3 className="text-base font-bold">Escolher leiras para o PDF</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Marque apenas as leiras que você quer mostrar no relatório impresso.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPdfModalOpen(false)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setPdfModalOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
-            <div className="my-3 flex items-center justify-between text-xs">
-              <button
-                type="button"
-                onClick={() => setPdfSelectedLeiras(leirasNoGrafico)}
-                className="font-semibold text-emerald-600 hover:underline"
-              >
-                Selecionar todas
-              </button>
-              <button
-                type="button"
-                onClick={() => setPdfSelectedLeiras([])}
-                className="text-slate-500 hover:underline"
-              >
-                Limpar seleção
-              </button>
-            </div>
+              <div className="my-3 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPdfSelectedLeiras(leirasNoGrafico)}
+                  className="font-semibold text-emerald-600 hover:underline"
+                >
+                  Selecionar todas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPdfSelectedLeiras([])}
+                  className="text-slate-500 hover:underline"
+                >
+                  Limpar seleção
+                </button>
+              </div>
 
-            <div className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto py-1">
-              {leirasNoGrafico.map((numLeira) => {
-                const checked = pdfSelectedLeiras.includes(numLeira);
-                return (
-                  <button
-                    key={numLeira}
-                    type="button"
-                    onClick={() =>
-                      setPdfSelectedLeiras((prev) =>
+              <div className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto py-1">
+                {leirasNoGrafico.map((numLeira) => {
+                  const checked = pdfSelectedLeiras.includes(numLeira);
+                  return (
+                    <button
+                      key={numLeira}
+                      type="button"
+                      onClick={() =>
+                        setPdfSelectedLeiras((prev) =>
+                          checked
+                            ? prev.filter((x) => x !== numLeira)
+                            : [...prev, numLeira].sort((a, b) => a - b)
+                        )
+                      }
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                         checked
-                          ? prev.filter((x) => x !== numLeira)
-                          : [...prev, numLeira].sort((a, b) => a - b)
-                      )
-                    }
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition ${
-                      checked
-                        ? 'border-emerald-600 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                        : 'border-slate-200 text-slate-500 hover:text-slate-900 dark:border-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`flex h-4 w-4 items-center justify-center rounded border ${
-                        checked
-                          ? 'border-emerald-600 bg-emerald-600 text-white'
-                          : 'border-slate-300'
+                          ? 'border-emerald-600 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                          : 'border-slate-200 text-slate-500 hover:text-slate-900 dark:border-slate-700'
                       }`}
                     >
-                      {checked && <Check className="h-3 w-3" />}
-                    </span>
-                    Leira {numLeira}
-                  </button>
-                );
-              })}
-            </div>
+                      <span
+                        className={`flex h-4 w-4 items-center justify-center rounded border ${
+                          checked
+                            ? 'border-emerald-600 bg-emerald-600 text-white'
+                            : 'border-slate-300'
+                        }`}
+                      >
+                        {checked && <Check className="h-3 w-3" />}
+                      </span>
+                      Leira {numLeira}
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setPdfModalOpen(false)}
-                className="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={pdfSelectedLeiras.length === 0}
-                onClick={confirmPdfExport}
-                className="rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-              >
-                PDF Monitoramento ({pdfSelectedLeiras.length})
-              </button>
-              <button
-                type="button"
-                disabled={pdfSelectedLeiras.length === 0}
-                onClick={() => {
-                  setPdfModalOpen(false);
-                  const param = pdfSelectedLeiras.join(',');
-                  nav(`/orcamentos/${o.id}/relatorio?tab=geral&leiras=${param}`);
-                }}
-                className="btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-40"
-              >
-                Relatório Geral ({pdfSelectedLeiras.length})
-              </button>
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPdfModalOpen(false)}
+                  className="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={pdfSelectedLeiras.length === 0}
+                  onClick={confirmPdfExport}
+                  className="rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                >
+                  PDF Monitoramento ({pdfSelectedLeiras.length})
+                </button>
+                <button
+                  type="button"
+                  disabled={pdfSelectedLeiras.length === 0}
+                  onClick={() => {
+                    setPdfModalOpen(false);
+                    const param = pdfSelectedLeiras.join(',');
+                    nav(`/orcamentos/${o.id}/relatorio?tab=geral&leiras=${param}`);
+                  }}
+                  className="btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-40"
+                >
+                  Relatório Geral ({pdfSelectedLeiras.length})
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

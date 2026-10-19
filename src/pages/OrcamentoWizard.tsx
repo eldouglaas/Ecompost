@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -1361,138 +1362,140 @@ export default function OrcamentoWizard() {
       {/* ===================================================================== */}
       {/* MODAL INTERATIVO: PLANEJAMENTO PARA MONTAGEM DA LEIRA (Campo + PDF)   */}
       {/* ===================================================================== */}
-      {montagemModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto"
-          onClick={() => setMontagemModalOpen(false)}
-        >
+      {montagemModalOpen &&
+        createPortal(
           <div
-            className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900 max-h-[90vh] overflow-y-auto space-y-5"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto"
+            onClick={() => setMontagemModalOpen(false)}
           >
-            <div className="flex items-start justify-between border-b pb-4 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-2 rounded-full bg-blue-600" />
-                <div>
-                  <h3 className="text-lg font-bold">
-                    Planejamento para Montagem da Leira
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Guia de distribuição linear (Kg/m), carga por leira ({o.leiraExtensaoM}m) e conchas de pá carregadeira
-                  </p>
+            <div
+              className="relative w-full max-w-4xl my-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900 max-h-[90vh] overflow-y-auto space-y-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b pb-4 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-2 rounded-full bg-blue-600" />
+                  <div>
+                    <h3 className="text-lg font-bold">
+                      Planejamento para Montagem da Leira
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Guia de distribuição linear (Kg/m), carga por leira ({o.leiraExtensaoM}m) e conchas de pá carregadeira
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = buildUpdatedOrcamento();
+                      saveOrcamento(updated);
+                      setMontagemModalOpen(false);
+                      nav(`/orcamentos/${o.id}/relatorio?tab=montagem`);
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                  >
+                    <Printer className="h-3.5 w-3.5" /> Abrir PDF Oficial de Montagem
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMontagemModalOpen(false)}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const updated = buildUpdatedOrcamento();
-                    saveOrcamento(updated);
-                    setMontagemModalOpen(false);
-                    nav(`/orcamentos/${o.id}/relatorio?tab=montagem`);
-                  }}
-                  className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-                >
-                  <Printer className="h-3.5 w-3.5" /> Abrir PDF Oficial de Montagem
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMontagemModalOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+
+              <WindrowCrossSectionDiagram
+                alturaM={o.leiraAlturaM}
+                baseMenorM={o.leiraBaseMenorM}
+                baseMaiorM={o.leiraBaseMaiorM}
+                secaoM2={d.secao}
+                extensaoLeiraM={o.leiraExtensaoM}
+                nrLeiras={d.nr}
+              />
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs dark:border-slate-800 dark:bg-slate-800/50">
+                <div>
+                  <span className="font-bold">Regulagem de Campo (Operador de Pá Carregadeira):</span>{' '}
+                  Informe o volume da concha para calcular o número de conchas por leira de {o.leiraExtensaoM}m.
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="font-semibold">Concha (m³):</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min={0.2}
+                    value={conchaM3}
+                    onChange={(e) => setConchaM3(Math.max(0.2, +e.target.value))}
+                    className="w-20 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-center font-bold dark:border-slate-700 dark:bg-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b bg-slate-100/80 text-[10px] font-bold uppercase text-slate-600 dark:border-slate-800 dark:bg-slate-800">
+                      <th className="py-2.5 px-3 text-left">Produto</th>
+                      <th className="py-2.5 px-3 text-right">Kg / Metro Linear</th>
+                      <th className="py-2.5 px-3 text-right">A cada 10m (Kg)</th>
+                      <th className="py-2.5 px-3 text-right">
+                        Por Leira de {o.leiraExtensaoM}m (tn)
+                      </th>
+                      <th className="py-2.5 px-3 text-right">
+                        Conchas ({num(conchaM3, 1)}m³) / Leira
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y dark:divide-slate-800">
+                    {d.m.itensComRateio.map((it) => {
+                      const kgM = it.kgPorMetro || 0;
+                      const kg10m = kgM * 10;
+                      const tnPorLeira = (kgM * o.leiraExtensaoM) / 1000;
+                      const prod = produtos.find((p) => p.id === it.produtoId);
+                      const dens = prod?.densidadeTnM3 || 0.7;
+                      const m3PorLeira = dens > 0 ? tnPorLeira / dens : 0;
+                      const conchasPorLeira = conchaM3 > 0 ? m3PorLeira / conchaM3 : 0;
+                      return (
+                        <tr key={it.id}>
+                          <td className="py-2.5 px-3 font-semibold">{it.produtoNome}</td>
+                          <td className="py-2.5 px-3 text-right font-bold text-blue-600">
+                            {num(kgM, 2)} kg/m
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {num(kg10m, 0)} kg
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-semibold">
+                            {num(tnPorLeira, 2)} tn
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-bold text-emerald-600">
+                            ~{Math.ceil(conchasPorLeira)} conchas
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t-2 bg-slate-50 font-bold dark:border-slate-700 dark:bg-slate-800/60">
+                      <td className="py-2.5 px-3">TOTAL:</td>
+                      <td className="py-2.5 px-3 text-right text-blue-600">
+                        {num(d.m.totalKgPorMetro, 2)} kg/m
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {num(d.m.totalKgPorMetro * 10, 0)} kg
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {num((d.m.totalKgPorMetro * o.leiraExtensaoM) / 1000, 2)} tn
+                      </td>
+                      <td className="py-2.5 px-3 text-right" />
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
-
-            <WindrowCrossSectionDiagram
-              alturaM={o.leiraAlturaM}
-              baseMenorM={o.leiraBaseMenorM}
-              baseMaiorM={o.leiraBaseMaiorM}
-              secaoM2={d.secao}
-              extensaoLeiraM={o.leiraExtensaoM}
-              nrLeiras={d.nr}
-            />
-
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs dark:border-slate-800 dark:bg-slate-800/50">
-              <div>
-                <span className="font-bold">Regulagem de Campo (Operador de Pá Carregadeira):</span>{' '}
-                Informe o volume da concha para calcular o número de conchas por leira de {o.leiraExtensaoM}m.
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="font-semibold">Concha (m³):</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min={0.2}
-                  value={conchaM3}
-                  onChange={(e) => setConchaM3(Math.max(0.2, +e.target.value))}
-                  className="w-20 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-center font-bold dark:border-slate-700 dark:bg-slate-900"
-                />
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b bg-slate-100/80 text-[10px] font-bold uppercase text-slate-600 dark:border-slate-800 dark:bg-slate-800">
-                    <th className="py-2.5 px-3 text-left">Produto</th>
-                    <th className="py-2.5 px-3 text-right">Kg / Metro Linear</th>
-                    <th className="py-2.5 px-3 text-right">A cada 10m (Kg)</th>
-                    <th className="py-2.5 px-3 text-right">
-                      Por Leira de {o.leiraExtensaoM}m (tn)
-                    </th>
-                    <th className="py-2.5 px-3 text-right">
-                      Conchas ({num(conchaM3, 1)}m³) / Leira
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y dark:divide-slate-800">
-                  {d.m.itensComRateio.map((it) => {
-                    const kgM = it.kgPorMetro || 0;
-                    const kg10m = kgM * 10;
-                    const tnPorLeira = (kgM * o.leiraExtensaoM) / 1000;
-                    const prod = produtos.find((p) => p.id === it.produtoId);
-                    const dens = prod?.densidadeTnM3 || 0.7;
-                    const m3PorLeira = dens > 0 ? tnPorLeira / dens : 0;
-                    const conchasPorLeira = conchaM3 > 0 ? m3PorLeira / conchaM3 : 0;
-                    return (
-                      <tr key={it.id}>
-                        <td className="py-2.5 px-3 font-semibold">{it.produtoNome}</td>
-                        <td className="py-2.5 px-3 text-right font-bold text-blue-600">
-                          {num(kgM, 2)} kg/m
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                          {num(kg10m, 0)} kg
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold">
-                          {num(tnPorLeira, 2)} tn
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-bold text-emerald-600">
-                          ~{Math.ceil(conchasPorLeira)} conchas
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  <tr className="border-t-2 bg-slate-50 font-bold dark:border-slate-700 dark:bg-slate-800/60">
-                    <td className="py-2.5 px-3">TOTAL:</td>
-                    <td className="py-2.5 px-3 text-right text-blue-600">
-                      {num(d.m.totalKgPorMetro, 2)} kg/m
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {num(d.m.totalKgPorMetro * 10, 0)} kg
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {num((d.m.totalKgPorMetro * o.leiraExtensaoM) / 1000, 2)} tn
-                    </td>
-                    <td className="py-2.5 px-3 text-right" />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
