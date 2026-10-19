@@ -3,6 +3,7 @@ import { Cliente, MedicaoLeiraPonto, Orcamento, Produto, UserProfile } from '../
 export const seedUserProfile: UserProfile = {
   id: 'usr-1',
   nome: 'Eng. Agr. Douglas Santos',
+  cpf: '070.345.146-40',
   email: 'contato@ecompost.agr.br',
   cargo: 'Engenheiro Agrônomo & Consultor Técnico',
   registroProfissional: 'CREA-MG 148.920/D',
@@ -10,6 +11,17 @@ export const seedUserProfile: UserProfile = {
   empresaFazenda: 'Ecompost Soluções Regenerativas',
   cidade: 'Cabeceira Grande',
   uf: 'MG',
+  nivelAcesso: 'Administrador',
+  statusAcesso: 'Ativo',
+  permissoes: [
+    'Criar e gerenciar orçamentos de compostagem',
+    'Acesso completo a receitas e balanço nutricional',
+    'Lançamento e monitoramento térmico de leiras',
+    'Emissão de relatórios técnicos e gerais em PDF',
+    'Gerenciamento de clientes e fazendas atendidas',
+    'Configuração de insumos e matérias-primas',
+    'Administração de usuários e níveis de acesso',
+  ],
   preferencias: {
     consultorPadrao: 'Equipe Ecompost',
     umidadeFinalPadrao: 30,

@@ -5,14 +5,18 @@ export type SituacaoOrcamento = 'Aberto' | 'Aprovado' | 'Cancelado';
 export interface UserProfile {
   id: string;
   nome: string;
+  cpf?: string;
   email: string;
   cargo: string;
-  registroProfissional: string; // CREA / CFTA
+  registroProfissional: string; // CREA / CFTA (opcional)
   telefone: string;
   empresaFazenda: string;
   cidade: string;
   uf: string;
   avatarUrl?: string;
+  nivelAcesso?: 'Administrador' | 'Consultor Técnico' | 'Produtor Rural' | 'Operador de Pátio';
+  statusAcesso?: 'Ativo' | 'Pendente' | 'Bloqueado';
+  permissoes?: string[];
   preferencias: {
     consultorPadrao: string;
     umidadeFinalPadrao: number;
