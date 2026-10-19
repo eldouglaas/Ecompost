@@ -19,7 +19,6 @@ const nav = [
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/produtos', label: 'Produtos', icon: Package },
   { to: '/orcamentos', label: 'Orçamentos', icon: FileText },
-  { to: '/perfil', label: 'Meu Perfil', icon: User },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
