@@ -5,7 +5,7 @@ import { brl, useStore } from '../store/store';
 const statusBadge = { Aberto: 'badge-open', Aprovado: 'badge-active', Cancelado: 'badge-canceled' } as const;
 
 export default function Dashboard() {
-  const { clientes, produtos, orcamentos, resetToOfficialData } = useStore();
+  const { clientes, produtos, orcamentos } = useStore();
   const total = orcamentos.reduce((s, o) => s + o.custoTotal, 0);
   const counts = { Aberto: 0, Aprovado: 0, Cancelado: 0 };
   orcamentos.forEach((o) => counts[o.situacao]++);
@@ -42,17 +42,6 @@ export default function Dashboard() {
           <p className="mb-4 text-slate-300">Sistema de gestão e orçamento de compostagem</p>
           <div className="flex flex-wrap items-center gap-3">
             <Link to="/orcamentos/novo" className="btn-primary">Novo Orçamento <ArrowRight className="h-4 w-4" /></Link>
-            <button
-              onClick={() => {
-                if (confirm('Recarregar todos os registros oficiais do Base44 (10 clientes, 22 produtos e 11 orçamentos com os valores exatos dos PDFs)?')) {
-                  resetToOfficialData();
-                  alert('Dados oficiais restaurados com sucesso!');
-                }
-              }}
-              className="rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white"
-            >
-              Restaurar Dados Oficiais (Base44)
-            </button>
           </div>
         </div>
       </div>

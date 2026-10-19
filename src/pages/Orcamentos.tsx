@@ -25,7 +25,6 @@ export default function Orcamentos() {
     clientes,
     deleteOrcamento,
     saveOrcamento,
-    resetToOfficialData,
   } = useStore();
   const nav = useNavigate();
   const [q, setQ] = useState('');
@@ -55,28 +54,12 @@ export default function Orcamentos() {
         title="Orçamentos"
         subtitle="Projetos de compostagem"
         action={
-          <div className="flex items-center gap-2">
-            <button
-              className="btn-secondary text-xs"
-              onClick={() => {
-                if (
-                  confirm(
-                    'Restaurar os 11 orçamentos oficiais do Base44 (incluindo Lourenço Sauer #1004 com medições e produtos)?'
-                  )
-                ) {
-                  resetToOfficialData();
-                }
-              }}
-            >
-              Restaurar Dados Base44
-            </button>
-            <button
-              className="btn-primary"
-              onClick={() => nav('/orcamentos/novo')}
-            >
-              <Plus className="h-4 w-4" /> Novo Orçamento
-            </button>
-          </div>
+          <button
+            className="btn-primary"
+            onClick={() => nav('/orcamentos/novo')}
+          >
+            <Plus className="h-4 w-4" /> Novo Orçamento
+          </button>
         }
       />
       <div className="mb-4 flex flex-wrap items-center gap-3">

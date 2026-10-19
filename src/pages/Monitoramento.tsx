@@ -23,8 +23,8 @@ import {
 import { num, uid, useStore } from '../store/store';
 import { MedicaoLeiraPonto } from '../types';
 
-// Paleta oficial de 14 cores das leiras extraída do Base44 (N3e / U3e)
-export const BASE44_LEIRA_COLORS = [
+// Paleta oficial de 14 cores das leiras no gráfico de monitoramento
+export const LEIRA_COLORS = [
   '#16a34a',
   '#2563eb',
   '#f59e0b',
@@ -40,16 +40,17 @@ export const BASE44_LEIRA_COLORS = [
   '#0369a1',
   '#c2410c',
 ];
+export const BASE44_LEIRA_COLORS = LEIRA_COLORS;
 
 export function getLeiraColor(indexOrNumber: number, allLeiras?: number[]): string {
   if (allLeiras && allLeiras.length > 0) {
     const idx = allLeiras.indexOf(indexOrNumber);
-    if (idx >= 0) return BASE44_LEIRA_COLORS[idx % BASE44_LEIRA_COLORS.length];
+    if (idx >= 0) return LEIRA_COLORS[idx % LEIRA_COLORS.length];
   }
-  return BASE44_LEIRA_COLORS[Math.max(0, indexOrNumber - 1) % BASE44_LEIRA_COLORS.length];
+  return LEIRA_COLORS[Math.max(0, indexOrNumber - 1) % LEIRA_COLORS.length];
 }
 
-// Diagnóstico textual idêntico à função yW(e) do Base44
+// Diagnóstico textual inteligente da maturação das leiras
 export function buildMonitoramentoHeadline(medicoes: MedicaoLeiraPonto[]): string | null {
   if (!medicoes || medicoes.length === 0) return null;
   const latestByLeira: Record<number, MedicaoLeiraPonto> = {};

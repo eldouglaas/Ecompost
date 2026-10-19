@@ -16,7 +16,7 @@ export function calculateNrLeiras(extensaoTotalM: number, extensaoPorLeiraM: num
 }
 
 /**
- * Motor oficial de cálculo agronômico e engenharia do composto (fiel à função G6 do Ecompost Base44)
+ * Motor oficial de cálculo agronômico e engenharia do composto Ecompost
  */
 export function calculateReceitaMetrics(
   itens: ItemReceitaComposto[],

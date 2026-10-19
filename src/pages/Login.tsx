@@ -11,9 +11,6 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/store';
 
-export const OFFICIAL_LOGO_URL =
-  'https://media.base44.com/images/public/6a76a4c58f4d46bf9a83da92/432773682_image.png';
-
 export default function Login() {
   const { login, userProfile } = useStore();
   const [email, setEmail] = useState(userProfile.email || 'contato@ecompost.agr.br');
