@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import {
   ArrowLeft,
   Download,
@@ -233,6 +235,89 @@ export default function Relatorio() {
     URL.revokeObjectURL(url);
   };
 
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const reportContainerRef = useRef<HTMLDivElement>(null);
+
+  const exportPdfDocument = async () => {
+    if (!reportContainerRef.current) return;
+    setIsExportingPdf(true);
+    try {
+      const container = reportContainerRef.current;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const sections = Array.from(
+        container.querySelectorAll<HTMLElement>('[data-pdf-section="true"]')
+      );
+      const targetElements = sections.length > 0 ? sections : [container];
+
+      for (let i = 0; i < targetElements.length; i++) {
+        const secEl = targetElements[i];
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        const canvas = await html2canvas(secEl, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 950,
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+
+        if (imgHeight <= pdfHeight) {
+          pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
+        } else {
+          let heightLeft = imgHeight;
+          let position = 0;
+          pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
+          heightLeft -= pdfHeight;
+
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
+            heightLeft -= pdfHeight;
+          }
+        }
+      }
+
+      const sanitize = (str: string) => str.replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const docTitles: Record<DocType, string> = {
+        resumido: 'Projeto_Compostagem_Resumido',
+        completo: 'Orcamento_Completo',
+        montagem: 'Planejamento_Montagem_Leira',
+        monitoramento: 'Monitoramento_Termico_Leiras',
+        geral: 'Relatorio_Geral_Completo',
+      };
+      const filename = `Ecompost_${docTitles[docType] || 'Documento'}_${o.numero}_${sanitize(
+        o.clienteNome
+      )}.pdf`;
+
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Erro ao exportar documento PDF:', err);
+      alert('Não foi possível gerar a exportação direta do PDF. Você pode utilizar o botão Imprimir para salvar.');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
+  useEffect(() => {
+    if (searchParams.get('auto') === 'pdf') {
+      const timer = setTimeout(() => {
+        exportPdfDocument();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
   // Estatísticas de Conclusão do Ciclo (fiel ao O3e)
   const medicoesValidas = medicoes.filter((m) => m.media > 0);
   const baseMed = medicoesValidas.length > 0 ? medicoesValidas : medicoes;
@@ -342,17 +427,29 @@ export default function Relatorio() {
           )}
 
           <button
-            onClick={() => window.print()}
-            className="btn-primary flex h-9 items-center gap-1.5 px-4 text-xs font-semibold"
+            onClick={exportPdfDocument}
+            disabled={isExportingPdf}
+            className="btn-primary flex h-9 items-center gap-1.5 px-4 text-xs font-semibold shadow-sm hover:shadow transition disabled:opacity-60"
+            title="Exportar documento oficial em PDF formatado"
           >
-            <Download className="h-3.5 w-3.5" /> Baixar PDF
+            {isExportingPdf ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span>Gerando PDF...</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-3.5 w-3.5" />
+                <span>Exportar Documento PDF</span>
+              </>
+            )}
           </button>
           <button
             onClick={() => window.print()}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            title="Imprimir"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            title="Imprimir página nativa no navegador"
           >
-            <Printer className="h-4 w-4" />
+            <Printer className="h-3.5 w-3.5" /> Imprimir
           </button>
         </div>
       </div>
@@ -573,12 +670,15 @@ export default function Relatorio() {
       )}
 
       {/* DOCUMENT PREVIEW CONTAINER */}
-      <div className="card print-page mx-auto max-w-4xl bg-white p-10 font-sans text-slate-800 shadow-md">
+      <div
+        ref={reportContainerRef}
+        className="card print-page mx-auto max-w-4xl bg-white p-10 font-sans text-slate-800 shadow-md"
+      >
         {/* ========================================================================= */}
         {/* 1. DOCUMENTO: PROJETO DE COMPOSTAGEM FINAL (RESUMIDO — YSe Base44)         */}
         {/* ========================================================================= */}
         {docType === 'resumido' && (
-          <div className="space-y-6">
+          <div data-pdf-section="true" className="space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -963,7 +1063,7 @@ export default function Relatorio() {
         {/* ========================================================================= */}
         {(docType === 'completo' ||
           (docType === 'geral' && geralIncOrcamento)) && (
-          <div className="space-y-6">
+          <div data-pdf-section="true" className="space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-3">
@@ -1452,6 +1552,7 @@ export default function Relatorio() {
         {(docType === 'montagem' ||
           (docType === 'geral' && geralIncMontagem)) && (
           <div
+            data-pdf-section="true"
             className={
               docType === 'geral' && geralIncOrcamento
                 ? 'print-section-divider space-y-6'
@@ -1739,6 +1840,7 @@ export default function Relatorio() {
         {(docType === 'monitoramento' ||
           (docType === 'geral' && geralIncMonitoramento)) && (
           <div
+            data-pdf-section="true"
             className={
               docType === 'geral' && (geralIncOrcamento || geralIncMontagem)
                 ? 'print-section-divider space-y-6'

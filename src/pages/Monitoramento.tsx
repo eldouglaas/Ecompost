@@ -432,7 +432,7 @@ export default function Monitoramento() {
   const confirmPdfExport = () => {
     setPdfModalOpen(false);
     const param = pdfSelectedLeiras.join(',');
-    nav(`/orcamentos/${o.id}/relatorio?tab=monitoramento&leiras=${param}`);
+    nav(`/orcamentos/${o.id}/relatorio?tab=monitoramento&leiras=${param}&auto=pdf`);
   };
 
   // Geometria SVG do Gráfico Interativo
@@ -1449,7 +1449,7 @@ export default function Monitoramento() {
                   onClick={() => {
                     setPdfModalOpen(false);
                     const param = pdfSelectedLeiras.join(',');
-                    nav(`/orcamentos/${o.id}/relatorio?tab=geral&leiras=${param}`);
+                    nav(`/orcamentos/${o.id}/relatorio?tab=geral&leiras=${param}&auto=pdf`);
                   }}
                   className="btn-primary px-4 py-2 text-xs font-semibold disabled:opacity-40"
                 >
